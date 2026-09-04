@@ -1,0 +1,178 @@
+// Home Assistant themes, from the same token sources [HA1].
+//
+// A Home Assistant theme is a YAML file with a fixed vocabulary of
+// variable names. Measured against ours on 2026-09-04: all eighteen that
+// matter already have a token here, including the sidebar, so the mapping
+// is nearly one to one and needs no new colours.
+//
+// The point is the same as everywhere else in this package — a dashboard
+// and a web page that disagree about what "primary" means are two
+// products. Generated rather than written by hand, and `--check` fails
+// when they drift, exactly like css/themes.css.
+//
+// Motion rides along where card-mod is installed: the theme's own
+// --fx-duration and --fx-ease become a transition on ha-card, so a
+// dashboard in terminal snaps and one in sepia drifts, the same way the
+// web components do.
+//
+// Usage:
+//   node gates/generate-ha-themes.mjs           write ha/*.yaml
+//   node gates/generate-ha-themes.mjs --check   exit 1 if any would change
+
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import process from 'node:process';
+import { themes } from './check-invariants.mjs';
+import { THEMES as REGISTRY } from '../js/theme-registry.js';
+import { contrast, hsl } from './colour.mjs';
+
+const OUT = new URL('../ha/', import.meta.url);
+
+/**
+ * Home Assistant's variable name on the left, ours on the right.
+ *
+ * Only names Home Assistant actually reads. Inventing entries here would
+ * produce YAML that looks thorough and changes nothing.
+ */
+const MAP = {
+    'primary-color': 'primary',
+    // Home Assistant uses these four as ink — an icon, a slider, a
+    // label — not as a plate behind text. Kenny's own Neon Grid theme
+    // sets them to saturated colours (#ff00ff, #ffaa00). Ours are pale
+    // tints in the light themes, so mapping the plate here would have
+    // produced an almost-white warning icon. The saturated half of each
+    // pair is what belongs.
+    'accent-color': 'fx-signal',
+    'primary-background-color': 'background',
+    'secondary-background-color': 'muted',
+    'card-background-color': 'card',
+    'primary-text-color': 'foreground',
+    'secondary-text-color': 'muted-foreground',
+    'disabled-text-color': 'border-strong',
+    'divider-color': 'border',
+    'error-color': 'destructive',
+    // These three are a pair each, and which half is the ink depends on
+    // the theme: pale plate with dark ink in six of them, saturated plate
+    // with white ink in high-contrast. Taking the foreground blindly put
+    // white on a white card there, at 1.0. `readable()` picks the half
+    // that can actually be seen.
+    'warning-color': ['warning', 'warning-foreground'],
+    'success-color': ['success', 'success-foreground'],
+    'info-color': ['info', 'info-foreground'],
+    'state-icon-color': 'muted-foreground',
+    'state-icon-active-color': 'primary',
+    'switch-checked-color': 'primary',
+    'sidebar-background-color': 'sidebar-background',
+    'sidebar-text-color': 'sidebar-foreground',
+    'sidebar-icon-color': 'sidebar-foreground',
+    'sidebar-selected-icon-color': 'sidebar-primary',
+    'sidebar-selected-text-color': 'sidebar-primary',
+    'app-header-background-color': 'card',
+    'app-header-text-color': 'card-foreground',
+    'table-row-background-color': 'card',
+    'table-row-alternative-background-color': 'muted',
+    'ha-card-border-color': 'border',
+};
+
+/** @param {import('./check-invariants.mjs').Theme} theme */
+function yaml(theme) {
+    const t = theme.tokens;
+    // The human name comes from the generated registry, which is where
+    // labels live; check-invariants only carries the colours.
+    const label = REGISTRY.find((r) => r.name === theme.name)?.label;
+    if (label === undefined) throw new Error(`no label for theme ${theme.name}; is it in themes/order.json?`);
+    /**
+     * Of a plate-and-ink pair, the half that reads on this theme's card.
+     * @param {string[]} pair
+     */
+    const readable = (pair) => {
+        const card = hsl(t.card);
+        return pair.map((k) => ({ k, c: contrast(hsl(t[k]), card) })).sort((a, b) => b.c - a.c)[0].k;
+    };
+
+    const lines = Object.entries(MAP).map(([ha, ours]) => {
+        const token = Array.isArray(ours) ? readable(ours) : ours;
+        return `      ${ha}: "${t[token]}"`;
+    });
+
+    // card-mod is optional. Where it is not installed Home Assistant
+    // ignores these two keys, so the theme still works — it simply does
+    // not move. That is why the motion goes here rather than into a
+    // separate file a user has to remember to install.
+    const cardMod = [
+        `  card-mod-theme: "${label}"`,
+        '  card-mod-root: |',
+        '    @media (prefers-reduced-motion: no-preference) {',
+        '      ha-card {',
+        `        transition: background-color ${t['fx-duration']} ${t['fx-ease']}, border-color ${t['fx-duration']} ${t['fx-ease']};`,
+        '      }',
+        '    }',
+    ];
+
+    return [
+        `# Generated by gates/generate-ha-themes.mjs from themes/${theme.name}/tokens.json.`,
+        '# Do not edit: `npm run gates` fails when this file and the token',
+        "# source disagree. Drop it in Home Assistant's themes/ directory.",
+        `${label}:`,
+        ...cardMod,
+        '  modes:',
+        `    ${t['color-scheme'] === 'dark' ? 'dark' : 'light'}:`,
+        ...lines,
+        `      ha-card-border-radius: "${t.radius}"`,
+        '      ha-card-border-width: "1px"',
+        '',
+    ].join('\n');
+}
+
+// The `kp-` prefix is not decoration: these land in the same directory as
+// a user's own themes, and a file called `dark.yaml` beside theirs is an
+// invitation to overwrite the wrong one. The name in the repository is
+// the name on the instance, so nothing is renamed in between.
+const files = themes().map(
+    /** @param {import('./check-invariants.mjs').Theme} theme */ (theme) => ({
+        name: `kp-${theme.name}.yaml`,
+        content: yaml(theme),
+    }),
+);
+
+if (process.argv.includes('--check')) {
+    let stale = 0;
+    let present;
+    try {
+        present = readdirSync(OUT);
+    } catch {
+        console.error('gate broke: ha/ is missing. Run `npm run generate:ha`.');
+        process.exit(1);
+    }
+    for (const file of files) {
+        let current = '';
+        try {
+            current = readFileSync(new URL(file.name, OUT), 'utf8');
+        } catch {
+            current = '';
+        }
+        if (current !== file.content) {
+            stale++;
+            console.error(`ha/${file.name} does not match its source.`);
+        }
+    }
+    // A theme file left behind by a theme that no longer exists would go
+    // on being loaded by Home Assistant, which is worse than a stale one.
+    const expected = new Set(files.map(/** @param {{name: string}} f */ (f) => f.name));
+    for (const file of present) {
+        if (!expected.has(file)) {
+            stale++;
+            console.error(`ha/${file} belongs to no theme.`);
+        }
+    }
+    if (stale > 0) {
+        console.error('Run `npm run generate:ha` and commit the result.');
+        process.exit(1);
+    }
+    console.log(`Home Assistant: ${files.length} themes match their source.`);
+    process.exit(0);
+}
+
+mkdirSync(OUT, { recursive: true });
+for (const file of readdirSync(OUT)) rmSync(new URL(file, OUT));
+for (const file of files) writeFileSync(new URL(file.name, OUT), file.content);
+console.log(`wrote ${files.length} Home Assistant themes to ha/.`);
