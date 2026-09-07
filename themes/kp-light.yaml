@@ -21,7 +21,7 @@ Light:
       disabled-text-color: "hsl(220, 10%, 57%)"
       divider-color: "hsl(220, 13%, 88%)"
       error-color: "hsl(0, 72%, 42%)"
-      warning-color: "hsl(38, 100%, 29%)"
+      warning-color: "hsl(38, 100%, 28%)"
       success-color: "hsl(150, 70%, 27%)"
       info-color: "hsl(205, 90%, 35%)"
       state-icon-color: "hsl(224, 12%, 38%)"

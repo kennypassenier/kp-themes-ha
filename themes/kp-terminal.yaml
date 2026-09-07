@@ -22,7 +22,7 @@ Terminal:
       divider-color: "hsl(120, 20%, 18%)"
       error-color: "hsl(0, 90%, 62%)"
       warning-color: "hsl(65, 100%, 43%)"
-      success-color: "hsl(120, 100%, 43%)"
+      success-color: "hsl(120, 100%, 44%)"
       info-color: "hsl(150, 75%, 46%)"
       state-icon-color: "hsl(120, 25%, 62%)"
       state-icon-active-color: "hsl(120, 90%, 50%)"
