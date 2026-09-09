@@ -9,6 +9,58 @@ Cyberpunk:
         transition: background-color 180ms cubic-bezier(0.2, 0.9, 0.2, 1), border-color 180ms cubic-bezier(0.2, 0.9, 0.2, 1);
       }
     }
+    /* The void behind everything, with the register's scanlines over it.
+       DI9 says a texture is felt and not seen: 0.06 is the ceiling and
+       this sits on it. */
+    hui-view, hui-sections-view, hui-masonry-view {
+      position: relative;
+    }
+    hui-view::before, hui-sections-view::before, hui-masonry-view::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        hsl(56 98% 51% / 0.06) 0 1px,
+        transparent 1px 3px
+      );
+    }
+  card-mod-card: |
+    /* The notched corner and the tick: the two moves that make a surface
+       read as cut metal rather than as a rounded box. */
+    ha-card {
+      position: relative;
+      border-radius: 0 !important;
+      border: 1px solid hsl(56, 60%, 16%) !important;
+      clip-path: polygon(
+        0 0,
+        calc(100% - 14px) 0,
+        100% 14px,
+        100% 100%,
+        14px 100%,
+        0 calc(100% - 14px)
+      );
+    }
+    /* The signal-yellow tick along the top edge: the accent as a mark,
+       not as a border. */
+    ha-card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 32px;
+      height: 2px;
+      background: hsl(56, 98%, 51%);
+      pointer-events: none;
+    }
+    .card-header {
+      font-family: 'Rajdhani', 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: hsl(56, 98%, 51%);
+    }
   modes:
     dark:
       primary-color: "hsl(56, 98%, 51%)"
