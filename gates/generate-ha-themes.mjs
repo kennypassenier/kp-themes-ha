@@ -16,16 +16,16 @@
 // web components do.
 //
 // Usage:
-//   node gates/generate-ha-themes.mjs           write ha/*.yaml
+//   node gates/generate-ha-themes.mjs           write themes/*.yaml
 //   node gates/generate-ha-themes.mjs --check   exit 1 if any would change
 
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
-import { themes } from './check-invariants.mjs';
-import { THEMES as REGISTRY } from '../js/theme-registry.js';
-import { contrast, hsl, parseHsl } from './colour.mjs';
+import { themes } from '../vendor/kp-themes/gates/check-invariants.mjs';
+import { THEMES as REGISTRY } from '../vendor/kp-themes/js/theme-registry.js';
+import { contrast, hsl, parseHsl } from '../vendor/kp-themes/gates/colour.mjs';
 
-const OUT = new URL('../ha/', import.meta.url);
+const OUT = new URL('../themes/', import.meta.url);
 
 /**
  * Home Assistant's variable name on the left, ours on the right.
@@ -233,7 +233,7 @@ function alpha(value, a) {
     return `hsl(${h} ${s}% ${l}% / ${a})`;
 }
 
-/** @param {import('./check-invariants.mjs').Theme} theme */
+/** @param {import('../vendor/kp-themes/gates/check-invariants.mjs').Theme} theme */
 function yaml(theme) {
     const t = theme.tokens;
     // The human name comes from the generated registry, which is where
@@ -296,7 +296,7 @@ function yaml(theme) {
 // invitation to overwrite the wrong one. The name in the repository is
 // the name on the instance, so nothing is renamed in between.
 const files = themes().map(
-    /** @param {import('./check-invariants.mjs').Theme} theme */ (theme) => ({
+    /** @param {import('../vendor/kp-themes/gates/check-invariants.mjs').Theme} theme */ (theme) => ({
         name: `kp-${theme.name}.yaml`,
         content: yaml(theme),
     }),

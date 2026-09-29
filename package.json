@@ -1,0 +1,17 @@
+{
+    "name": "kp-themes-ha",
+    "version": "1.0.0",
+    "description": "The kp-themes themes as Home Assistant themes.",
+    "private": true,
+    "type": "module",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kennypassenier/kp-themes-ha.git"
+    },
+    "scripts": {
+        "generate": "node gates/generate-ha-themes.mjs",
+        "check": "node gates/check-vendor.mjs && node gates/generate-ha-themes.mjs --check && node --test gates/",
+        "vendor": "scripts/vendor-kp-themes.sh"
+    }
+}
