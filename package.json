@@ -12,6 +12,7 @@
     "scripts": {
         "generate": "node gates/generate-ha-themes.mjs",
         "check": "node gates/check-vendor.mjs && node gates/generate-ha-themes.mjs --check && node --test gates/",
-        "vendor": "scripts/vendor-kp-themes.sh"
+        "vendor": "scripts/vendor-kp-themes.sh",
+        "check:commit": "node gates/check-vendor.mjs && node gates/generate-ha-themes.mjs --check"
     }
 }

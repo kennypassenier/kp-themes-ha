@@ -3,4 +3,6 @@
 #   git config core.hooksPath .githooks
 set -e
 cd "$(git rev-parse --show-toplevel)"
-npm run --silent check
+# Tests (node --test) wait for the release (Kenny, 2026-09-30); a commit
+# runs only the pin and generated-file checks. `npm run check` runs all.
+npm run --silent check:commit
